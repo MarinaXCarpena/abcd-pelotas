@@ -1,0 +1,86 @@
+ABCD SCRIPT
+
+
+
+setwd("/Users/marinaxcarpena/Library/CloudStorage/OneDrive-Pessoal/wellcome-stress&sleep/abcd-pelotas")
+   
+# Suggest: enable faster backend BLAS for R, e.g. openBlas, MKL
+# Run in R to install dependencies
+
+install.packages(c("Rcpp", "data.table", "stringi", "BH",  "RcppEigen"))
+    
+# Install SBayesRC package
+
+install.packages("https://github.com/zhilizheng/SBayesRC/releases/download/v0.2.6/SBayesRC_0.2.6.tar.gz",
+                     repos=NULL, type="source")
+
+# If R report problem when installing, try alternative version (worse performance and an old version)
+ install.packages("https://github.com/zhilizheng/SBayesRC/releases/download/v0.2.0/SBayesRC_0.2.0_comp.tar.gz", repos=NULL, type="source")
+    
+##############################################
+ # Variables: need to be fixed
+    ma_file=adhd_sumstats_copy.ma              # GWAS summary in COJO format (the only input)
+    ld_folder="../ukbEUR_HM3"        # LD reference (download from "Resources")
+    out_prefix="./adhd"   # Output prefix, e.g. "./test"
+    threads=4                       # Number of CPU cores
+    
+ ##############################################
+    # Code: usually don't need a change in this section
+    ## Note: Flags were documented in the package, use ?function in R to lookup.
+    ## We suggest to run those in multiple jobs (tasks)
+    export OMP_NUM_THREADS=4 # Revise the threads
+    
+    # Tidy: optional step, tidy summary data
+    ## "log2file=TRUE" means the messages will be redirected to a log file 
+SBayesRC::tidy(mafile= ".../adhd_sumstats_copy.ma" , LDdir="../ukbEUR_HM3" , \
+                  output='.../napping_tidy.ma', log2file=TRUE)
+    ## Best practice: read the log to check issues in your GWAS summary data.  
+SBayesRC::tidy(mafile=adhd_sumstats_copy.ma", LDdir="../ukbEUR_HM3")
+    
+install.packages("SBayesRC")
+
+# tidy_script.R
+library(SBayesRC)
+SBayesRC::tidy(mafile="napping", LDdir="../ukbEUR_HM3", output="napping_tidy.ma", log2file=TRUE)
+
+    
+    # Impute: optional step if your summary data doesn't cover the SNP panel
+    Rscript -e "SBayesRC::impute(mafile='${out_prefix}_tidy.ma', LDdir='$ld_folder', \
+                  output='${out_prefix}_imp.ma', log2file=TRUE)"
+    
+    # SBayesRC: main function for SBayesRC
+    Rscript -e "SBayesRC::sbayesrc(mafile='${out_prefix}_imp.ma', LDdir='$ld_folder', \
+                  outPrefix='${out_prefix}_sbrc', annot='$annot', log2file=TRUE)"
+    # Alternative run, SBayesRC without annotation (similar to SBayesR, not recommended)
+    # Rscript -e "SBayesRC::sbayesrc(mafile='${out_prefix}_imp.ma', LDdir='$ld_folder', \
+    #                  outPrefix='${out_prefix}_sbrc_noAnnot', log2file=TRUE)"
+    
+    ##############################################
+    # Polygenic risk score
+    ## Just a toy demo to calculate the polygenic risk score
+    # genoPrefix="test_chr{CHR}" # {CHR} means multiple genotype file.
+    ## If just one genotype, input the full prefix genoPrefix="test"
+    # genoCHR="1-22,X" ## means {CHR} expands to 1-22 and X,
+    ## if just one genotype file, input genoCHR=""
+    # output="test"
+    # Rscript -e "SBayesRC::prs(weight='${out_prefix}_sbrc.txt', genoPrefix='$genoPrefix', \
+    #                    out='$output', genoCHR='$genoCHR')"
+    ## test.score.txt is the polygenic risk score
+    
+    #################################
+    ## SBayesRC multi
+    ## Run each ancestry: summary data and ancestry matched LD,
+    ##    to obtain prs1 and prs2 from the SBayesRC::prs
+    # prs1="eur.score.txt"
+    # prs2="eas.score.txt"
+    # tuneid="tune.id" # two columns FID IID, without header
+    # pheno="trait.pheno" # three columns FID IID phenotype, without header, only the samples in tuneid are used 
+    # outPrefix="tuned_eur_eas"
+    # Rscript -e "SBayesRC::sbrcMulti(prs1='$prs1', prs2='$prs2', \
+    #             outPrefix='$outPrefix', tuneid='$tuneid', pheno='$pheno')"
+    ## weighted PRS in tuned_eur_eas.score.txt
+    ## Please don't forget to exclude the tuning sample to calculate the prediction accuracy
+    # Usar o operador pipe para renomear colunas
+  
+
+    
