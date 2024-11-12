@@ -1,7 +1,5 @@
 ABCD SCRIPT
 
-
-
 setwd("/Users/marinaxcarpena/Library/CloudStorage/OneDrive-Pessoal/wellcome-stress&sleep/abcd-pelotas")
    
 # Suggest: enable faster backend BLAS for R, e.g. openBlas, MKL
